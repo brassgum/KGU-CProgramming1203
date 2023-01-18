@@ -11,6 +11,9 @@
 #define AVERAGE_WORD_SIZE 4.7F
 #define ALPHABET_LETTERS 27
 #define INPUT_BUFFER_SIZE 512
+#define STR_EQ 0
+#define STR_GT 1
+#define STR_LT -1
 
 #define ROUND(f) ((int)((f) + 0.5F))
 #define IS_A_VALID_CHARACTER(c)  (('a' <= (c) && (c) <= 'z') \
@@ -172,7 +175,8 @@ int StrComp(const char* str0, size_t strLen0,
 		if (temp0 < temp1) { return 1; }
 		else { return -1; }
 	}
-	if (strLen0 == strLen1) { return 0; }
+	if (strLen0 == strLen1) { return STR_EQ; }
+	// strLen0 > strLen1 -> return STR_LT, !(strLen0 > strLen1) -> return STR_GT
 	return -2 * (strLen0 > strLen1) + 1;
 }
 
@@ -288,7 +292,7 @@ key_t CreateKey(const char* word)
 {
 	key_t keyH = word[1] << 8;
 	key_t keyL = word[2];
-	// Exceptional characters: '?'
+	// Exceptional character: '?'
 	if (keyH == ('?' << 8)) { keyH = 0xff00; }
 	if (keyL == '?') { keyL = 0xff; }
 	return keyH | keyL;
@@ -311,7 +315,7 @@ void BuildDictionary(pWordNode_t const positiveList, pWordNode_t const negativeL
 	}
 	if (StrComp(
 		positiveBak->Word, positiveBak->Length,
-		negativeBak->Word, negativeBak->Length) != -1)
+		negativeBak->Word, negativeBak->Length) != STR_LT)
 	{
 		attributeContext = positiveBak;
 		positiveBak = positiveBak->Next;
@@ -342,7 +346,7 @@ void BuildDictionary(pWordNode_t const positiveList, pWordNode_t const negativeL
 		}
 		if (StrComp(
 			positiveBak->Word, positiveBak->Length,
-			negativeBak->Word, negativeBak->Length) != -1)
+			negativeBak->Word, negativeBak->Length) != STR_LT)
 		{
 			attributeContext = attributeContext->Next = positiveBak;
 			positiveBak = positiveBak->Next;
@@ -392,7 +396,7 @@ pDictionaryNode_t _InsertLabelRecursion(pDictionaryNode_t trav, pDictionaryNode_
 	unsigned char condition = trav->KeyValue < temp->KeyValue;
 	if (temp->KeyValue == trav->KeyValue)
 	{
-		condition = 1 == StrComp(
+		condition = STR_GT == StrComp(
 			trav->WordList->Word, trav->WordList->Length,
 			temp->WordList->Word, temp->WordList->Length);
 	}
@@ -515,8 +519,8 @@ pWordNode_t GetOnDictoinary(const char* word, int wordLen)
 		{
 			ret = temp->WordList;
 			condition = StrComp(ret->Word, ret->Length, word, wordLen);
-			if (condition == 0) { break; }
-			condition = condition == 1;
+			if (condition == STR_EQ) { break; }
+			condition = condition == STR_GT;
 		}
 		condition = condition || temp->KeyValue < key;
 
@@ -544,7 +548,7 @@ pWordNode_t GetOnDictoinary(const char* word, int wordLen)
 			for (size_t i = 0; i < 8 && nodeBak != NULL; i++)
 			{
 				int comp = StrComp(nodeBak->Word, nodeBak->Length, word, wordLen);
-				if (comp == 0) { return nodeBak; }
+				if (comp == STR_EQ) { return nodeBak; }
 				// if (comp == -1) { return NULL; }
 				nodeBak = nodeBak->Next;
 			}
@@ -552,7 +556,7 @@ pWordNode_t GetOnDictoinary(const char* word, int wordLen)
 		for (size_t i = 0; i < 8 && ret != NULL; i++)
 		{
 			int comp = StrComp(ret->Word, ret->Length, word, wordLen);
-			if (comp == 0) { return ret; }
+			if (comp == STR_EQ) { return ret; }
 			// if (comp == -1) { return NULL; }
 			ret = ret->Next;
 		}
@@ -594,9 +598,9 @@ void ReadReviewFile(const char* fileName)
 			{
 				++count[temp->bPositive];
 			RETEST_NEXT:
-				if (temp->Next != NULL && StrComp(
+				if (temp->Next != NULL && STR_EQ == StrComp(
 					temp->Word, temp->Length,
-					temp->Next->Word, temp->Next->Length) == 0
+					temp->Next->Word, temp->Next->Length) 
 					&& temp->bPositive != temp->Next->bPositive)
 				{
 					++count[temp->Next->bPositive];
