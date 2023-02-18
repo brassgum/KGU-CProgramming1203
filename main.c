@@ -240,9 +240,18 @@ int Init(void)
 	size_t wordsCount = 0;
 	pWordNode_t list = wordList;
 	pWordNode_t negativeWordList = NULL;
-FILL_WORDS_LIST:
-	for (i = 0; i < estimatedWordCount && (size_t)wordInitial < (size_t)sourceEnd;)
+	for (i = 0; i < estimatedWordCount;)
 	{
+		if ((size_t)wordInitial < (size_t)sourceEnd)
+		{
+			const float averageWordLength = (float)sumWordLen / (float)estimatedWordCount;
+			estimatedWordCount =
+				((size_t)sourceEnd - (size_t)wordInitial) / ROUND(averageWordLength);
+			list->Next = MemChunkAlloc(sizeof(WordNode_t) * estimatedWordCount);
+			assert(list->Next != NULL);
+			list = list->Next;
+		}
+
 		int wordLen = GetWordLength(wordInitial);
 		if (wordLen < 0)
 		{
@@ -268,16 +277,6 @@ FILL_WORDS_LIST:
 		{
 			++wordInitial;
 		}
-	}
-	if ((size_t)wordInitial < (size_t)sourceEnd)
-	{
-		const float averageWordLength = (float)sumWordLen / (float)estimatedWordCount;
-		estimatedWordCount =
-			((size_t)sourceEnd - (size_t)wordInitial) / ROUND(averageWordLength);
-		list->Next = MemChunkAlloc(sizeof(WordNode_t) * estimatedWordCount);
-		assert(list->Next != NULL);
-		list = list->Next;
-		goto FILL_WORDS_LIST;
 	}
 	list = list - 1;
 	list->Next = NULL;
@@ -332,7 +331,7 @@ void BuildDictionary(pWordNode_t const positiveList, pWordNode_t const negativeL
 
 	int hitCount = 1;
 	Dictionary[dictionaryIndex]->WordList = attributeContext;
-	while (1)
+	for (;;)
 	{
 		if (positiveBak == negativeList)
 		{
@@ -597,15 +596,13 @@ void ReadReviewFile(const char* fileName)
 			if (temp != NULL)
 			{
 				++count[temp->bPositive];
-			RETEST_NEXT:
-				if (temp->Next != NULL && STR_EQ == StrComp(
+				while (temp->Next != NULL && STR_EQ == StrComp(
 					temp->Word, temp->Length,
 					temp->Next->Word, temp->Next->Length) 
 					&& temp->bPositive != temp->Next->bPositive)
 				{
 					++count[temp->Next->bPositive];
 					temp = temp->Next;
-					goto RETEST_NEXT;
 				}
 			}
 			word = word + length;
