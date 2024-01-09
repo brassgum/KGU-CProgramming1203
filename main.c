@@ -22,6 +22,8 @@
 #define DICTIONARY_1D_HASHING(value) (int)((((value) | 0x20) - 'a' + 1) \
 	* ('a' <= ((value) | 0x20) && ((value) | 0x20) <= 'z'))
 
+#define SUNG_JOON_TEST
+
 typedef unsigned short key_t;
 typedef enum WordAttribute
 {
